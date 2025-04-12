@@ -1,0 +1,146 @@
+/* Custom CSS for Course Reviews */
+
+/* Color scheme */
+:root {
+    --primary-color: #5D5CDE;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --light-bg: #ffffff;
+    --dark-bg: #181818;
+    --border-color: #dee2e6;
+    --text-dark: #343a40;
+    --text-light: #f8f9fa;
+}
+
+/* Bootstrap overrides */
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #4a49b3;
+    border-color: #4a49b3;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.badge.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-dark);
+    background-color: #f5f5f5;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Card styling */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Star Rating */
+.stars {
+    display: inline-flex;
+    color: #adb5bd;
+}
+
+.star {
+    margin-right: 2px;
+}
+
+.star.filled {
+    color: #ffc107;
+}
+
+.large-stars {
+    font-size: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-title.h5 {
+        font-size: 1rem;
+    }
+    
+    .large-stars {
+        font-size: 1.2rem;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: var(--dark-bg);
+        color: var(--text-light);
+    }
+    
+    .card, .form-control, .form-select {
+        background-color: #242424;
+        border-color: #444;
+        color: var(--text-light);
+    }
+    
+    .bg-light {
+        background-color: #242424 !important;
+    }
+    
+    .text-muted {
+        color: #adb5bd !important;
+    }
+    
+    .text-dark {
+        color: #e9ecef !important;
+    }
+    
+    .badge.bg-light {
+        background-color: #444 !important;
+        color: #e9ecef !important;
+    }
+    
+    .list-group-item {
+        background-color: #242424;
+        border-color: #444;
+        color: var(--text-light);
+    }
+}
+
+/* Form element focus states */
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(93, 92, 222, 0.25);
+}
+
+/* Required field indicator */
+.text-danger {
+    color: #dc3545 !important;
+}
