@@ -6,7 +6,7 @@ class CourseReviewApp {
     constructor() {
         // Configuration - REPLACE WITH YOUR ACTUAL API ENDPOINT
         this.config = {
-            apiUrl: 'https://github.com/Hussain-Ali-Ahmed/demo/edit/Hussain-Ali-Ahmed-patch-1/db.json',
+            apiUrl: 'C:\Users\Computia.me\Documents\FUCK uob\itcs333\course-notes\ITCS333-Project\Course Review\db.json',
             endpoints: {
                 courses: '/courses',
                 reviews: '/reviews'

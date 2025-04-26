@@ -1,0 +1,38 @@
+[
+    {
+        "id": "1",
+        "name": "Internet Software Development",
+        "code": "ITCS333",
+        "instructor": "Dr. Abdulla Ebrahim Subah",
+        "department": "IT",
+        "rating": 4.9,
+        "reviewCount": 24,
+        "description": "A great course covering the fundamentals of Software Development with an innovative Instructor.",
+        "difficulty": "moderate",
+        "createdAt": "2024-03-15T10:00:00Z"
+    },
+    {
+        "id": "2",
+        "name": "Calculus I",
+        "code": "MATHS101",
+        "instructor": "Dr. Oliver Thomas",
+        "department": "MATHS",
+        "rating": 1.4,
+        "reviewCount": 18,
+        "description": "Covers limits, derivatives, and integrals with practical applications.",
+        "difficulty": "difficult",
+        "createdAt": "2024-02-20T09:30:00Z"
+    },
+    {
+        "id": "3",
+        "name": "English Literature",
+        "code": "ENG154",
+        "instructor": "Dr. Hussain Ali Ahmed",
+        "department": "English",
+        "rating": 5.0,
+        "reviewCount": 32,
+        "description": "An engaging exploration of major literary works from around the world.",
+        "difficulty": "easy",
+        "createdAt": "2024-04-01T11:15:00Z"
+    }
+]
