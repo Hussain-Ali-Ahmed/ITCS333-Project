@@ -1,264 +1,310 @@
-var coursesList = document.querySelector('#course-listing .row');
-var searchInput = document.querySelector('.input-group input');
-var searchButton = document.querySelector('.input-group .btn-primary');
-var departmentFilter = document.querySelector('.form-select:first-of-type');
-var sortSelect = document.querySelector('.form-select:last-of-type');
-var reviewForm = document.querySelector('form');
-var allCourses = [];
-var currentPage = 1;
-var coursesPerPage = 6;
-window.onload = function() {
-    saveOriginalCourses();
-        setupEvents();
-        fetchMoreCourses();
-        addPagination();
-};
+/* courseReviews.js - JavaScript for Course Review System */
+/* Hussain Ali Ahmed Ali, 202208704 */
+const courseListingSection = document.getElementById('course-listing');
+const searchInput = document.querySelector('#course-listing input[type="text"]');
+const searchButton = document.querySelector('#course-listing .btn-primary');
+const departmentFilter = document.querySelector('#course-listing select:first-of-type');
+const sortFilter = document.querySelector('#course-listing select:last-of-type');
+const reviewForm = document.querySelector('#add-review form');
 
-function saveOriginalCourses() {
-    var cards = document.querySelectorAll('.col-md-6.col-lg-4');
-    cards.forEach(function(card) {
-        var course = {
-            id: Math.floor(Math.random() * 1000),
-            courseName: card.querySelector('.card-title').textContent,
-            courseCode: card.querySelector('.badge').textContent,
-            professor: card.querySelector('.text-muted').textContent.replace('Professor: ', '').replace('Instructor: ', ''),
-            department: card.querySelector('.badge').textContent.match(/[A-Z]+/)[0],
-            rating: parseFloat(card.querySelector('small').textContent.split('/')[0]),
-            reviewCount: parseInt(card.querySelector('small').textContent.match(/\((\d+) reviews\)/)[1]),
-            description: card.querySelector('.card-text').textContent
-        };
-        allCourses.push(course);
-    });
-}
-function setupEvents() {
-    searchButton.addEventListener('click', function() {
-        searchCourses();
-    });
-    
-    departmentFilter.addEventListener('change', function() {
-        searchCourses();
-    });
-    
-    sortSelect.addEventListener('change', function() {
-        sortCourses();
-        showCourses();
-    });
-    
-    reviewForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (validateForm()) {
-            alert('Review submitted successfully!');
-            reviewForm.reset();
-        }
-    });
-}
-function fetchMoreCourses() {
-    var loadingMsg = document.createElement('div');
-    loadingMsg.className = 'col-12 text-center';
-    loadingMsg.innerHTML = '<p>Loading more courses...</p>';
-    coursesList.appendChild(loadingMsg);
-    fetch('https://jsonplaceholder.typicode.com/posts')
-        .then(function(response) {
-            return response.json();
-        })
-        .then(function(data) {
-            for (var i = 0; i < 5; i++) {
-                var newCourse = {
-                    id: 1000 + i,
-                    courseName: getRandomName(),
-                    courseCode: getRandomDept() + Math.floor(Math.random() * 300 + 100),
-                    professor: getRandomProf(),
-                    department: getRandomDept(),
-                    rating: (Math.random() * 4 + 1).toFixed(1),
-                    reviewCount: Math.floor(Math.random() * 30),
-                    description: data[i].body.substring(0, 100) + '...'
-                };
-                allCourses.push(newCourse);
-            }
-            
-            loadingMsg.remove();
-            
-            showCourses();
-        })
-        .catch(function(error) {
-            loadingMsg.innerHTML = '<p>Error loading courses</p>';
-        });
-}
-function getRandomName() {
-    var names = ["Web Development", "Data Structures", "Operating Systems", 
-                "Artificial Intelligence", "Networks", "Mobile Development"];
-    return names[Math.floor(Math.random() * names.length)];
-}
-function getRandomDept() {
-    var depts = ["IT", "MATHS", "ENG", "LIT", "BUS", "SCE"];
-    return depts[Math.floor(Math.random() * depts.length)];
-}
-function getRandomProf() {
-    var profs = ["Dr. Ahmed", "Dr. Sarah", "Dr. Ali", "Dr. John", "Dr. Fatima"];
-    return profs[Math.floor(Math.random() * profs.length)];
-}
+let courses = [];
+let filteredCourses = [];
+let currentPage = 1;
+const coursesPerPage = 6;
 
-function searchCourses() {
-    var searchText = searchInput.value.toLowerCase();
-    var selectedDept = departmentFilter.value;
-    var filteredCourses = [];
-    for (var i = 0; i < allCourses.length; i++) {
-        var course = allCourses[i];
-        var matchesSearch = course.courseName.toLowerCase().includes(searchText) ||
-                            course.courseCode.toLowerCase().includes(searchText) ||
-                            course.professor.toLowerCase().includes(searchText);
-        var matchesDept = selectedDept === "All Departments" || 
-                          course.department.includes(selectedDept);
-        if (matchesSearch && matchesDept) {
-            filteredCourses.push(course);
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCourses();
+    setupEventListeners();
+});
+
+async function fetchCourses() {
+    try {
+        courseListingSection.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        
+        const response = await fetch('https://raw.githubusercontent.com/Hussain-Ali-Ahmed/course-reviews/main/courses.json');
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch courses');
         }
+        
+        courses = await response.json();
+        filteredCourses = [...courses];
+        renderCourses();
+    } catch (error) {
+        console.error('Error fetching courses:', error);
+        courseListingSection.innerHTML = `<div class="alert alert-danger">Error loading courses. Please try again later.</div>`;
     }
-    allCourses = filteredCourses;
+}
+
+// Set up event listeners
+function setupEventListeners() {
+    // Search functionality
+    searchButton.addEventListener('click', filterCourses);
+    searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') filterCourses();
+    });
+    
+    // Filter and sort
+    departmentFilter.addEventListener('change', filterCourses);
+    sortFilter.addEventListener('change', sortCourses);
+    
+    // Form validation
+    reviewForm.addEventListener('submit', handleFormSubmit);
+}
+
+// Filter courses based on search and department
+function filterCourses() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const department = departmentFilter.value;
+    
+    filteredCourses = courses.filter(course => {
+        const matchesSearch = course.name.toLowerCase().includes(searchTerm) || 
+                             course.code.toLowerCase().includes(searchTerm) ||
+                             course.professor.toLowerCase().includes(searchTerm);
+        const matchesDepartment = department === 'All Departments' || course.department === department;
+        
+        return matchesSearch && matchesDepartment;
+    });
+    
     currentPage = 1;
-    showCourses();
-    updatePagination();
+    sortCourses();
 }
+
+// Sort courses based on selected option
 function sortCourses() {
-    var sortBy = sortSelect.value;
+    const sortBy = sortFilter.value;
     
-    if (sortBy === "Highest Rated") {
-        allCourses.sort(function(a, b) {
-            return b.rating - a.rating;
-        });
-    } else if (sortBy === "Lowest Rated") {
-        allCourses.sort(function(a, b) {
-            return a.rating - b.rating;
-        });
+    switch(sortBy) {
+        case 'Highest Rated':
+            filteredCourses.sort((a, b) => b.rating - a.rating);
+            break;
+        case 'Lowest Rated':
+            filteredCourses.sort((a, b) => a.rating - b.rating);
+            break;
+        case 'Newest':
+        default:
+            filteredCourses.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
+    
+    renderCourses();
 }
-function showCourses() {
-    coursesList.innerHTML = '';
-    var start = (currentPage - 1) * coursesPerPage;
-    var end = Math.min(start + coursesPerPage, allCourses.length);
-    if (allCourses.length === 0) {
-        coursesList.innerHTML = '<div class="col-12 text-center"><p>No courses found</p></div>';
+
+// Render courses to the DOM
+function renderCourses() {
+    if (filteredCourses.length === 0) {
+        courseListingSection.innerHTML = '<div class="alert alert-info">No courses found matching your criteria.</div>';
         return;
     }
-    for (var i = start; i < end; i++) {
-        var course = allCourses[i];
-        var starsHtml = '';
-        for (var s = 1; s <= 5; s++) {
-            if (s <= course.rating) {
-                starsHtml += '<span class="star filled">★</span>';
-            } else {
-                starsHtml += '<span class="star">★</span>';
-            }
-        }
-        var courseCard = document.createElement('div');
-        courseCard.className = 'col-md-6 col-lg-4 mb-3';
-        courseCard.innerHTML = 
-            '<div class="card h-100">' +
-                '<div class="card-body">' +
-                    '<div class="d-flex justify-content-between">' +
-                        '<h3 class="card-title h5">' + course.courseName + '</h3>' +
-                        '<span class="badge bg-primary">' + course.courseCode + '</span>' +
-                    '</div>' +
-                    '<p class="text-muted">Professor: ' + course.professor + '</p>' +
-                    '<div class="mb-2">' +
-                        '<div class="stars">' + starsHtml + '</div>' +
-                        '<small class="text-muted">' + course.rating + '/5.0 (' + course.reviewCount + ' reviews)</small>' +
-                    '</div>' +
-                    '<p class="card-text">' + course.description + '</p>' +
-                '</div>' +
-            '</div>';
-        
-        coursesList.appendChild(courseCard);
-    }
-}
-function addPagination() {
-    var paginationNav = document.createElement('nav');
-    paginationNav.setAttribute('aria-label', 'Course pagination');
-    paginationNav.className = 'my-4';
-    var paginationList = document.createElement('ul');
-    paginationList.className = 'pagination justify-content-center';
-    paginationList.id = 'pagination';
-    paginationNav.appendChild(paginationList);
-    coursesList.parentNode.appendChild(paginationNav);
-    updatePagination();
-}
-function updatePagination() {
-    var pagination = document.getElementById('pagination');
-    if (!pagination) return;
-    pagination.innerHTML = '';
-    var totalPages = Math.ceil(allCourses.length / coursesPerPage);
-    if (totalPages <= 1) return;
-    var prevButton = document.createElement('li');
-    prevButton.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
-    prevButton.innerHTML = '<a class="page-link" href="#">Previous</a>';
-    if (currentPage > 1) {
-        prevButton.onclick = function(e) {
-            e.preventDefault();
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * coursesPerPage;
+    const endIndex = startIndex + coursesPerPage;
+    const coursesToShow = filteredCourses.slice(startIndex, endIndex);
+    
+    // Generate HTML for courses
+    const coursesHTML = coursesToShow.map(course => `
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h3 class="card-title h5">${course.name}</h3>
+                        <span class="badge bg-primary">${course.code}</span>
+                    </div>
+                    <p class="text-muted">Instructor: ${course.professor}</p>
+                    <div class="mb-2">
+                        <div class="stars large-stars">
+                            ${renderStars(course.rating)}
+                        </div>
+                        <small class="text-muted">${course.rating.toFixed(1)}/5.0 (${course.reviews} reviews)</small>
+                    </div>
+                    <p class="card-text">${course.description}</p>
+                    <button class="btn btn-outline-primary btn-sm view-details" data-id="${course.id}">View Details</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Generate pagination controls
+    const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+    const paginationHTML = totalPages > 1 ? `
+        <div class="row mt-4">
+            <div class="col-12">
+                <nav aria-label="Course pagination">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <button class="page-link" id="prev-page">Previous</button>
+                        </li>
+                        ${Array.from({length: totalPages}, (_, i) => `
+                            <li class="page-item ${i + 1 === currentPage ? 'active' : ''}">
+                                <button class="page-link page-number">${i + 1}</button>
+                            </li>
+                        `).join('')}
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <button class="page-link" id="next-page">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    ` : '';
+    
+    // Update the DOM
+    courseListingSection.innerHTML = `
+        <h2 class="mb-3">Course Listings</h2>
+        <div class="row" id="courses-container">
+            ${coursesHTML}
+        </div>
+        ${paginationHTML}
+    `;
+    
+    // Add event listeners to pagination buttons
+    document.getElementById('prev-page')?.addEventListener('click', () => {
+        if (currentPage > 1) {
             currentPage--;
-            showCourses();
-            updatePagination();
-        };
-    }
-    pagination.appendChild(prevButton);
-    for (var i = 1; i <= totalPages; i++) {
-        var pageButton = document.createElement('li');
-        pageButton.className = 'page-item' + (i === currentPage ? ' active' : '');
-        pageButton.innerHTML = '<a class="page-link" href="#">' + i + '</a>';
-        (function(pageNum) {
-            pageButton.onclick = function(e) {
-                e.preventDefault();
-                currentPage = pageNum;
-                showCourses();
-                updatePagination();
-            };
-        })(i);
-        
-        pagination.appendChild(pageButton);
-    }
-    var nextButton = document.createElement('li');
-    nextButton.className = 'page-item' + (currentPage === totalPages ? ' disabled' : '');
-    nextButton.innerHTML = '<a class="page-link" href="#">Next</a>';
-    if (currentPage < totalPages) {
-        nextButton.onclick = function(e) {
-            e.preventDefault();
+            renderCourses();
+        }
+    });
+    
+    document.getElementById('next-page')?.addEventListener('click', () => {
+        if (currentPage < totalPages) {
             currentPage++;
-            showCourses();
-            updatePagination();
-        };
-    }
+            renderCourses();
+        }
+    });
     
-    pagination.appendChild(nextButton);
+    // Add event listeners to page number buttons
+    document.querySelectorAll('.page-number').forEach(button => {
+        button.addEventListener('click', (e) => {
+            currentPage = parseInt(e.target.textContent);
+            renderCourses();
+        });
+    });
+    
+    // Add event listeners to view details buttons
+    document.querySelectorAll('.view-details').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const courseId = e.target.dataset.id;
+            showCourseDetails(courseId);
+        });
+    });
 }
-function validateForm() {
-    var isValid = true;
-    var requiredFields = ['courseName', 'courseCode', 'professor', 'reviewTitle', 'reviewText'];
+
+// Render star rating
+function renderStars(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    let starsHTML = '';
     
-    for (var i = 0; i < requiredFields.length; i++) {
-        var field = document.getElementById(requiredFields[i]);
-        if (!field.value.trim()) {
-            field.classList.add('is-invalid');
-            isValid = false;
+    for (let i = 1; i <= 5; i++) {
+        if (i <= fullStars) {
+            starsHTML += '<span class="star filled">★</span>';
+        } else if (i === fullStars + 1 && hasHalfStar) {
+            starsHTML += '<span class="star half">★</span>';
         } else {
-            field.classList.remove('is-invalid');
+            starsHTML += '<span class="star">★</span>';
         }
     }
-    var department = document.getElementById('department');
-    if (department.value === '') {
-        department.classList.add('is-invalid');
+    
+    return starsHTML;
+}
+
+// Show course details (would be expanded in a real implementation)
+function showCourseDetails(courseId) {
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return;
+    
+    alert(`Course Details:\n\nName: ${course.name}\nCode: ${course.code}\nProfessor: ${course.professor}\nRating: ${course.rating}\nDescription: ${course.description}`);
+}
+
+// Handle form submission
+function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+        return;
+    }
+    
+    // In a real app, we would send this data to a server
+    alert('Thank you for your review! It has been submitted successfully.');
+    reviewForm.reset();
+}
+
+// Validate form inputs
+function validateForm() {
+    let isValid = true;
+    
+    // Reset error states
+    document.querySelectorAll('.is-invalid').forEach(el => {
+        el.classList.remove('is-invalid');
+    });
+    document.querySelectorAll('.invalid-feedback').forEach(el => {
+        el.remove();
+    });
+    
+    // Validate course name
+    const courseName = document.getElementById('courseName');
+    if (!courseName.value.trim()) {
+        showError(courseName, 'Course name is required');
         isValid = false;
-    } else {
-        department.classList.remove('is-invalid');
     }
-    var ratingSelected = false;
-    var ratings = document.getElementsByName('rating');
-    for (var i = 0; i < ratings.length; i++) {
-        if (ratings[i].checked) {
-            ratingSelected = true;
-            break;
-        }
-    }
-    if (!ratingSelected) {
-        alert('Please select a rating');
+    
+    // Validate course code
+    const courseCode = document.getElementById('courseCode');
+    if (!courseCode.value.trim()) {
+        showError(courseCode, 'Course code is required');
         isValid = false;
     }
+    
+    // Validate professor name
+    const professor = document.getElementById('professor');
+    if (!professor.value.trim()) {
+        showError(professor, 'Professor name is required');
+        isValid = false;
+    }
+    
+    // Validate department
+    const department = document.getElementById('department');
+    if (!department.value) {
+        showError(department, 'Please select a department');
+        isValid = false;
+    }
+    
+    // Validate rating
+    const rating = document.querySelector('input[name="rating"]:checked');
+    if (!rating) {
+        const ratingContainer = document.querySelector('.rating-input');
+        const errorElement = document.createElement('div');
+        errorElement.className = 'invalid-feedback d-block';
+        errorElement.textContent = 'Please select a rating';
+        ratingContainer.appendChild(errorElement);
+        isValid = false;
+    }
+    
+    // Validate review title
+    const reviewTitle = document.getElementById('reviewTitle');
+    if (!reviewTitle.value.trim()) {
+        showError(reviewTitle, 'Review title is required');
+        isValid = false;
+    }
+    
+    // Validate review text
+    const reviewText = document.getElementById('reviewText');
+    if (!reviewText.value.trim()) {
+        showError(reviewText, 'Review details are required');
+        isValid = false;
+    } else if (reviewText.value.trim().length < 20) {
+        showError(reviewText, 'Review must be at least 20 characters');
+        isValid = false;
+    }
+    
     return isValid;
+}
+
+// Show error message for a form field
+function showError(field, message) {
+    field.classList.add('is-invalid');
+    const errorElement = document.createElement('div');
+    errorElement.className = 'invalid-feedback';
+    errorElement.textContent = message;
+    field.parentNode.appendChild(errorElement);
 }
